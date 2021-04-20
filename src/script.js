@@ -3,26 +3,6 @@ import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 
 //shaders
-const fragment = `
-// varying vec4 kri;
-varying vec2 vUv;
-varying vec3 vNormal;
-
-uniform sampler2D audioData;
-uniform sampler2D textureImg;
-
-  
-  
-void main() {
-  vec3 color = vec3(1.0);
-  vec2 newUV = vUv;
-
-  vec4 oceanView = texture2D(textureImg,newUV);
-    
-  gl_FragColor = vec4(vNormal, 1.0);
-  // gl_FragColor = oceanView;
-}  
-`
 
 const vertex = `
 // GLSL textureless classic 3D noise "cnoise",
@@ -149,8 +129,10 @@ mat3 rotation3dY(float angle) {
     return rotation3dY(angle) * v;
   } 
 
+varying float vDistort;
 varying vec3 vNormal;
 varying vec2 vUv;
+
 
 uniform float uTime;
 uniform float frequency;
@@ -173,12 +155,42 @@ void main() {
     //Sine Wave
     float angle = sin(uv.y * 0.3 + t * 0.2) * 2.3 * 4.0;
     pos = rotateY(pos, angle);
-    
+
+
     vNormal = normal;
+    vDistort = distortion;
     vUv = uv;
 
     gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.);
   } 
+`
+
+const fragment = `
+varying float vDistort;
+varying vec3 vNormal;
+
+uniform float uIntensity;
+
+vec3 cosPalette(float t, vec3 a, vec3 b, vec3 c, vec3 d) {
+  return a + b * cos(6.28318 * (c * t + d));
+}  
+
+void main() {
+
+  if (vDistort == 0.) {
+    vec3 color = vNormal;
+  }
+  float distort = vDistort * 2.0;
+
+  vec3 brightness = vec3(0.5, 0.5, 0.5);
+  vec3 contrast = vec3(1.5, 1.5, 1.5);
+  vec3 oscilation = vec3(0.4, 0.5, 0.);
+  vec3 phase = vec3(0.0, 0.1, 0.2);
+
+  vec3 color = cosPalette(distort, brightness, contrast, oscilation, phase);
+
+  gl_FragColor = vec4(color, 1.0);
+}
 `
 // set up for Three.js
 
